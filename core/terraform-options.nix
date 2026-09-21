@@ -7,12 +7,11 @@ with lib;
 
 let
   mkMagicMergeOption =
-    {
-      description ? "",
-      example ? { },
-      default ? { },
-      apply ? id,
-      ...
+    { description ? ""
+    , example ? { }
+    , default ? { }
+    , apply ? id
+    , ...
     }:
     mkOption {
       inherit
@@ -25,14 +24,15 @@ let
         with lib.types;
         let
           valueType =
-            nullOr (oneOf [
-              bool
-              int
-              float
-              str
-              (attrsOf valueType)
-              (listOf valueType)
-            ])
+            nullOr
+              (oneOf [
+                bool
+                int
+                float
+                str
+                (attrsOf valueType)
+                (listOf valueType)
+              ])
             // {
               description = "bool, int, float or str";
               emptyValue.value = { };
@@ -42,9 +42,8 @@ let
     };
 
   mkReferenceableOption =
-    {
-      referencePrefix ? "",
-      ...
+    { referencePrefix ? ""
+    , ...
     }@args:
     mkMagicMergeOption (
       args
@@ -55,13 +54,15 @@ let
           in
           mapAttrsOrSkip (
             type: v1:
-            mapAttrsOrSkip (
-              label: v2:
-              if isAttrs v2 then
-                v2 // { __functor = self: attr: "\${${referencePrefix}${type}.${label}.${attr}}"; }
-              else
-                v2
-            ) v1
+              mapAttrsOrSkip
+                (
+                  label: v2:
+                    if isAttrs v2 then
+                      v2 // { __functor = self: attr: "\${${referencePrefix}${type}.${label}.${attr}}"; }
+                    else
+                      v2
+                )
+                v1
           );
       }
     );
@@ -77,6 +78,34 @@ in
       default = { };
       internal = true;
       description = "Arbitrary metadata attached to a terranix evaluation result.";
+    };
+
+    # Checked in core/default.nix once the configuration is assembled.
+    # Neither option is rendered to Terraform JSON.
+    assertions = mkOption {
+      type = types.listOf types.unspecified;
+      default = [ ];
+      internal = true;
+      example = [{
+        assertion = false;
+        message = "you can't enable this for that reason";
+      }];
+      description = ''
+        Conditions that must hold for the evaluation of the terranix
+        configuration to succeed, together with the message shown to the
+        user when they do not.
+      '';
+    };
+
+    warnings = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      internal = true;
+      example = [ "The etcd backend is deprecated and will go away soon!" ];
+      description = ''
+        Messages to show to users during the evaluation of the terranix
+        configuration, without failing it.
+      '';
     };
 
     ephemeral = mkReferenceableOption {
